@@ -512,7 +512,7 @@ EOL
     echo -e "\e[32m✔\e[0m Custom CEC keymap created!"
 
     echo -e "\e[90mCreating CEC wrapper script...\e[0m"
-    sudo bash -c "cat > /usr/local/bin/cec-setup.sh" << 'EOL'
+sudo bash -c "cat > /usr/local/bin/cec-setup.sh" << 'EOL'
 #!/bin/bash
 set -e
 
@@ -530,11 +530,10 @@ if [ -z "$CEC_DEV" ]; then
   exit 1
 fi
 
-# 2) rc device detektálás: első ir-keytable által listázott eszköz (pl. rc0, rc1)
+# 2) rc device detektálás: első ir-keytable által listázott rcX (rc0, rc1...)
 RC_DEV=""
 if command -v ir-keytable >/dev/null 2>&1; then
-  # Példa kimenet: "Found /sys/class/rc/rc0/ ..."
-  RC_DEV=$(ir-keytable -l 2>/dev/null | awk '/Found .*\/rc[0-9]+\// { match($0, /\/rc[0-9]+\//); print substr($0, RSTART+1, RLENGTH-2); exit }' || true)
+  RC_DEV=$(ir-keytable -l 2>/dev/null | grep -o 'rc[0-9]\+' | head -n 1 || true)
 fi
 
 if [ -z "$RC_DEV" ]; then
@@ -554,9 +553,8 @@ sleep 1
 exit 0
 EOL
 
-    sudo chmod +x /usr/local/bin/cec-setup.sh
-    echo -e "\e[32m✔\e[0m CEC wrapper script created at /usr/local/bin/cec-setup.sh"
-
+sudo chmod +x /usr/local/bin/cec-setup.sh
+echo -e "\e[32m✔\e[0m CEC wrapper script created at /usr/local/bin/cec-setup.sh"
 
     # systemd szolgáltatás létrehozása CEC beállításhoz
     echo -e "\e[90mCreating CEC setup service...\e[0m"
