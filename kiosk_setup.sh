@@ -74,17 +74,35 @@ ask_user() {
 KIOSK_BEGIN="#KIOSKPARANCS_BEGIN"
 KIOSK_END="#KIOSKPARANCS_END"
 
+is_root_file() {
+  local file="$1"
+  case "$file" in
+    /boot/*|/boot/firmware/*|/etc/*|/usr/*|/var/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 ensure_parent_dir() {
   local f="$1"
   local d
   d="$(dirname "$f")"
-  mkdir -p "$d"
+
+  if is_root_file "$f"; then
+    sudo mkdir -p "$d"
+  else
+    mkdir -p "$d"
+  fi
 }
 
 remove_kiosk_block() {
   local file="$1"
   [ -f "$file" ] || return 0
-  sed -i "/^${KIOSK_BEGIN}\$/,/^${KIOSK_END}\$/d" "$file"
+
+  if is_root_file "$file"; then
+    sudo sed -i "/^${KIOSK_BEGIN}\$/,/^${KIOSK_END}\$/d" "$file"
+  else
+    sed -i "/^${KIOSK_BEGIN}\$/,/^${KIOSK_END}\$/d" "$file"
+  fi
 }
 
 write_kiosk_block() {
@@ -92,14 +110,35 @@ write_kiosk_block() {
   local content="$2"
 
   ensure_parent_dir "$file"
-  touch "$file"
+
+  # fájl létezzen (root esetén sudo-val)
+  if [ ! -f "$file" ]; then
+    if is_root_file "$file"; then
+      sudo touch "$file"
+    else
+      touch "$file"
+    fi
+  fi
+
   remove_kiosk_block "$file"
 
-  {
-    echo "$KIOSK_BEGIN"
-    printf "%b\n" "$content"
-    echo "$KIOSK_END"
-  } >> "$file"
+  if is_root_file "$file"; then
+
+    sudo bash -c "cat >> '$file' <<'EOL'
+${KIOSK_BEGIN}
+EOL"
+    printf "%b" "$content" | sudo tee -a "$file" > /dev/null
+    sudo bash -c "cat >> '$file' <<'EOL'
+${KIOSK_END}
+EOL"
+  else
+    {
+      echo "$KIOSK_BEGIN"
+      printf "%b" "$content"
+      echo "$KIOSK_END"
+    } >> "$file"
+  fi
+
 }
 
 # =========================
@@ -671,20 +710,14 @@ fi
 
 # 1) labwc autostart KIOSKPARANCS blokk kiírása (ha kellett)
 if [ "$AUTOSTART_NEEDS_UPDATE" = "y" ]; then
-  ensure_parent_dir "$LABWC_AUTOSTART_FILE"
-  touch "$LABWC_AUTOSTART_FILE"
   write_kiosk_block "$LABWC_AUTOSTART_FILE" "$AUTOSTART_BLOCK"
   echo -e "\e[32m✔\e[0m labwc autostart frissítve (KIOSKPARANCS blokk): $LABWC_AUTOSTART_FILE"
 fi
 
 # 2) config.txt KIOSKPARANCS blokk kiírása (ha kellett)
 if [ "$CONFIG_NEEDS_UPDATE" = "y" ]; then
-  if [ -f "$BOOT_CONFIG" ]; then
-    write_kiosk_block "$BOOT_CONFIG" "$CONFIG_BLOCK"
-    echo -e "\e[32m✔\e[0m boot config frissítve (KIOSKPARANCS blokk): $BOOT_CONFIG"
-  else
-    echo -e "\e[33mFigyelmeztetés: $BOOT_CONFIG nem található, config.txt módosítás kihagyva.\e[0m"
-  fi
+  write_kiosk_block "$BOOT_CONFIG" "$CONFIG_BLOCK"
+  echo -e "\e[32m✔\e[0m boot config frissítve (KIOSKPARANCS blokk): $BOOT_CONFIG"
 fi
 
 # 3) cmdline.txt paraméter-szintű módosítások (ha kellett)
