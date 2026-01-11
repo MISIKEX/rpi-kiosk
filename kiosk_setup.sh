@@ -106,7 +106,7 @@ if ask_user "Szeretnéd telepíteni a Chromium böngészőt?" "y"; then
     if [ -z "$CHROMIUM_PKG" ]; then
         echo -e "\e[33mNem található Chromium csomag az APT-ben. Lehet, hogy engedélyezni kell egy megfelelő tárolót, vagy kézzel kell telepíteni.\e[0m"
     else
-        echo -e "\e[90mTelepítés $CHROMIUM_PKG. THIS MAY TAKE SOME TIME, please wait...\e[0m"
+        echo -e "\e[90mTelepítés $CHROMIUM_PKG. EZ ELTARTHAT EGY IDEIG, kérlek várj...\e[0m"
         sudo apt install --no-install-recommends -y "$CHROMIUM_PKG" > /dev/null 2>&1 &
         spinner $! "Telepítés $CHROMIUM_PKG..."
     fi
@@ -115,7 +115,7 @@ fi
 # greetd telepítése és beállítása?
 echo
 if ask_user "Szeretnéd telepíteni és beállítani a greetd-t a labwc automatikus indításához?" "y"; then
-    echo -e "\e[90mTelepítés greetd for auto start of labwc, please wait...\e[0m"
+    echo -e "\e[90mgreetd telepítése a labwc automatikus indításához, kérlek várj...\e[0m"
     sudo apt install -y greetd > /dev/null 2>&1 &
     spinner $! "Telepítés greetd..."
 
@@ -137,7 +137,7 @@ EOL"
 
     echo -e "\e[90mGrafikus target beállítása alapértelmezettként...\e[0m"
     sudo systemctl set-default graphical.target > /dev/null 2>&1 &
-    spinner $! "Setting graphical target..."
+    spinner $! "Grafikus target beállítása..."
 fi
 
 # Autostart (Chromium) script létrehozása labwc-hez?
@@ -157,12 +157,12 @@ if ask_user "Szeretnél Chromium autostart scriptet létrehozni labwc-hez?" "y";
     echo
     NETWORK_WAIT=""
     if ask_user "Várjon hálózati kapcsolatra a Chromium indítása előtt?" "n"; then
-        read -p "Enter host to ping for network check [default: 8.8.8.8]: " PING_HOST
+        read -p "Add meg a pingelendő hostot hálózati ellenőrzéshez [default: 8.8.8.8]: " PING_HOST
         PING_HOST="${PING_HOST:-8.8.8.8}"
-        read -p "Enter maximum wait time in seconds [default: 30]: " MAX_WAIT
+        read -p "Add meg a maximális várakozási időt másodpercben [default: 30]: " MAX_WAIT
         MAX_WAIT="${MAX_WAIT:-30}"
 
-        NETWORK_WAIT="  # Wait for network connectivity (max ${MAX_WAIT}s)
+        NETWORK_WAIT="  # Várakozás hálózati kapcsolatra (max ${MAX_WAIT}s)
   for i in \$(seq 1 $MAX_WAIT); do
     if ping -c 1 -W 2 $PING_HOST > /dev/null 2>&1; then
       sleep 2
@@ -188,7 +188,7 @@ if ask_user "Szeretnél Chromium autostart scriptet létrehozni labwc-hez?" "y";
             CHROMIUM_BIN="/usr/bin/chromium-browser"
         else
             CHROMIUM_BIN="/usr/bin/chromium"
-            echo -e "\e[33mFigyelmeztetés: nem található Chromium bináris a PATH-ban. Using $CHROMIUM_BIN in autostart — adjust if needed.\e[0m"
+            echo -e "\e[33mFigyelmeztetés: nem található Chromium bináris a PATH-ban. Használat: $CHROMIUM_BIN in autostart — szükség esetén módosítsd.\e[0m"
         fi
     fi
 
@@ -222,7 +222,7 @@ echo
 if ask_user "Szeretnéd elrejteni az egérkurzort kiosk módban?" "y"; then
     # wtype telepítése, ha még nincs jelen
     if ! command -v wtype &> /dev/null; then
-        echo -e "\e[90mTelepítés wtype for cursor control, please wait...\e[0m"
+        echo -e "\e[90mwtype telepítése az egérkurzor kezeléséhez, kérlek várj...\e[0m"
         sudo apt install -y wtype > /dev/null 2>&1 &
         spinner $! "Telepítés wtype..."
     fi
@@ -285,7 +285,7 @@ fi
 echo
 if ask_user "Szeretnéd telepíteni a splash képernyőt?" "y"; then
     # Plymouth és témák telepítése (pix-plym-splash)
-    echo -e "\e[90mTelepítés splash screen and themes. THIS MAY TAKE SOME TIME, please wait...\e[0m"
+    echo -e "\e[90mSplash képernyő és témák telepítése. EZ ELTARTHAT EGY IDEIG, kérlek várj...\e[0m"
     sudo apt-get install -y plymouth plymouth-themes pix-plym-splash > /dev/null 2>&1 &
     spinner $! "Telepítés splash screen..."
 
@@ -314,29 +314,29 @@ if ask_user "Szeretnéd telepíteni a splash képernyőt?" "y"; then
     CONFIG_TXT="$BOOT_CONFIG"
     if [ -f "$CONFIG_TXT" ]; then
         if ! grep -q "disable_splash" "$CONFIG_TXT"; then
-            echo -e "\e[90mAdding disable_splash=1 to $CONFIG_TXT...\e[0m"
+            echo -e "\e[90mdisable_splash=1 hozzáadása ide: $CONFIG_TXT...\e[0m"
             sudo bash -c "echo 'disable_splash=1' >> '$CONFIG_TXT'"
         else
-            echo -e "\e[33m$CONFIG_TXT already contains a disable_splash option. No changes made. Please check manually!\e[0m"
+            echo -e "\e[33m$CONFIG_TXT már tartalmaz disable_splash opciót. Nem történt módosítás, kérlek ellenőrizd manuálisan!\e[0m"
         fi
     else
-        echo -e "\e[33m$CONFIG_TXT not found — skipping config.txt modification.\e[0m"
+        echo -e "\e[33m$CONFIG_TXT nem található — config.txt módosítás kihagyva.\e[0m"
     fi
 
     CMDLINE_TXT="$BOOT_CMDLINE"
     if [ -f "$CMDLINE_TXT" ]; then
         if ! grep -q "splash" "$CMDLINE_TXT"; then
-            echo -e "\e[90mAdding quiet splash plymouth.ignore-serial-consoles to $CMDLINE_TXT...\e[0m"
+            echo -e "\e[90mquiet splash plymouth.ignore-serial-consoles hozzáadása ide: $CMDLINE_TXT...\e[0m"
             sudo sed -i 's/$/ quiet splash plymouth.ignore-serial-consoles/' "$CMDLINE_TXT"
         fi
         if grep -q "console=tty1" "$CMDLINE_TXT"; then
-            echo -e "\e[90mReplacing console=tty1 with console=tty3 in $CMDLINE_TXT...\e[0m"
+            echo -e "\e[90mconsole=tty1 cseréje console=tty3-ra itt: $CMDLINE_TXT...\e[0m"
             sudo sed -i 's/console=tty1/console=tty3/' "$CMDLINE_TXT"
         elif ! grep -q "console=tty3" "$CMDLINE_TXT"; then
-            echo -e "\e[90mAdding console=tty3 to $CMDLINE_TXT...\e[0m"
+            echo -e "\e[90mconsole=tty3 hozzáadása ide: $CMDLINE_TXT...\e[0m"
             sudo sed -i 's/$/ console=tty3/' "$CMDLINE_TXT"
         fi
-        echo -e "\e[32m✔\e[0m Splash screen installed and configured with pix theme."
+        echo -e "\e[32m✔\e[0m Splash képernyő telepítve és beállítva pix témával."
     else
         echo -e "\e[33m$CMDLINE_TXT not found — skipping cmdline.txt modification.\e[0m"
     fi
@@ -344,14 +344,14 @@ fi
 
 # Képernyőfelbontás beállítása
 echo
-if ask_user "Do you want to set the screen resolution in cmdline.txt and the labwc autostart file?" "y"; then
+if ask_user "Szeretnéd beállítani a képernyőfelbontást a cmdline.txt-ben és a labwc autostart fájlban?" "y"; then
 
     # Check if edid-decode is installed; if not, install it
     if ! command -v edid-decode &> /dev/null; then
-        echo -e "\e[90mTelepítés required tool edid-decode, please wait...\e[0m"
+        echo -e "\e[90mSzükséges eszköz (edid-decode) telepítése, kérlek várj...\e[0m"
         sudo apt install -y edid-decode > /dev/null 2>&1 &
         spinner $! "Telepítés edid-decode..."
-        echo -e "\e[32mrequired tool installed successfully!\e[0m"
+        echo -e "\e[32mA szükséges eszköz sikeresen telepítve!\e[0m"
     fi
 
     # EDID kiolvasása (gyakori útvonalok: card1 vagy card0)
@@ -378,18 +378,18 @@ if ask_user "Do you want to set the screen resolution in cmdline.txt and the lab
 
     # Alapértelmezett lista használata, ha nincs EDID eredmény
     if [ ${#available_resolutions[@]} -eq 0 ]; then
-        echo -e "\e[33mNo resolutions found via EDID. Using default list.\e[0m"
+        echo -e "\e[33mNo resolutions found via EDID. Használat: default list.\e[0m"
         available_resolutions=("1920x1080@60" "1280x720@60" "1024x768@60" "1600x900@60" "1366x768@60")
     fi
 
     # Felhasználó felbontásválasztása
-    echo -e "\e[94mPlease choose a resolution (type in the number):\e[0m"
+    echo -e "\e[94mKérlek válassz felbontást (type in the number):\e[0m"
     select RESOLUTION in "${available_resolutions[@]}"; do
         if [[ -n "$RESOLUTION" ]]; then
-            echo -e "\e[32mYou selected $RESOLUTION\e[0m"
+            echo -e "\e[32mKiválasztva: $RESOLUTION\e[0m"
             break
         else
-            echo -e "\e[33mInvalid selection, please try again.\e[0m"
+            echo -e "\e[33mÉrvénytelen választás, kérlek próbáld újra.\e[0m"
         fi
     done
 
@@ -397,12 +397,12 @@ if ask_user "Do you want to set the screen resolution in cmdline.txt and the lab
     CMDLINE_FILE="$BOOT_CMDLINE"
     if [ -f "$CMDLINE_FILE" ]; then
         if ! grep -q "video=" "$CMDLINE_FILE"; then
-            echo -e "\e[90mAdding video=HDMI-A-1:$RESOLUTION to $CMDLINE_FILE...\e[0m"
+            echo -e "\e[90mvideo=HDMI-A-1 hozzáadása:$RESOLUTION to $CMDLINE_FILE...\e[0m"
             # Prepend video=... at start of single-line cmdline.txt
             sudo sed -i "1s/^/video=HDMI-A-1:$RESOLUTION /" "$CMDLINE_FILE"
-            echo -e "\e[32m✔\e[0m Resolution added to cmdline.txt successfully!"
+            echo -e "\e[32m✔\e[0m A felbontás sikeresen hozzáadva a cmdline.txt-hez!"
         else
-            echo -e "\e[33mcmdline.txt already contains a video entry. No changes made.\e[0m"
+            echo -e "\e[33mA cmdline.txt már tartalmaz video bejegyzést. Nem történt módosítás.\e[0m"
         fi
     else
         echo -e "\e[33m$CMDLINE_FILE not found — skipping cmdline modification.\e[0m"
@@ -413,7 +413,7 @@ if ask_user "Do you want to set the screen resolution in cmdline.txt and the lab
     touch "$AUTOSTART_FILE"
     if ! grep -q "wlr-randr --output HDMI-A-1 --mode $RESOLUTION" "$AUTOSTART_FILE" 2>/dev/null; then
         echo "wlr-randr --output HDMI-A-1 --mode $RESOLUTION" >> "$AUTOSTART_FILE"
-        echo -e "\e[32m✔\e[0m Resolution command added to labwc autostart file successfully!"
+        echo -e "\e[32m✔\e[0m A felbontás parancs sikeresen hozzáadva a labwc autostart fájlhoz!"
     else
         echo -e "\e[33mAutostart file already contains this resolution command. No changes made.\e[0m"
     fi
@@ -421,8 +421,8 @@ fi
 
 # Képernyő elforgatásának beállítása
 echo
-if ask_user "Do you want to set the screen orientation (rotation)?" "n"; then
-    echo -e "\e[94mPlease choose an orientation:\e[0m"
+if ask_user "Szeretnéd beállítani a képernyő elforgatását?" "n"; then
+    echo -e "\e[94mKérlek válassz tájolást:\e[0m"
     orientations=("normal (0°)" "90° clockwise" "180°" "270° clockwise")
     transform_values=("normal" "90" "180" "270")
 
@@ -430,10 +430,10 @@ if ask_user "Do you want to set the screen orientation (rotation)?" "n"; then
         if [[ -n "$orientation" ]]; then
             idx=$((REPLY - 1))
             TRANSFORM="${transform_values[$idx]}"
-            echo -e "\e[32mYou selected $orientation\e[0m"
+            echo -e "\e[32mKiválasztva: $orientation\e[0m"
             break
         else
-            echo -e "\e[33mInvalid selection, please try again.\e[0m"
+            echo -e "\e[33mÉrvénytelen választás, kérlek próbáld újra.\e[0m"
         fi
     done
 
@@ -442,7 +442,7 @@ if ask_user "Do you want to set the screen orientation (rotation)?" "n"; then
     touch "$AUTOSTART_FILE"
     if ! grep -q "wlr-randr.*--transform" "$AUTOSTART_FILE" 2>/dev/null; then
         echo "wlr-randr --output HDMI-A-1 --transform $TRANSFORM" >> "$AUTOSTART_FILE"
-        echo -e "\e[32m✔\e[0m Screen orientation added to labwc autostart file successfully!"
+        echo -e "\e[32m✔\e[0m A képernyő tájolása sikeresen hozzáadva a labwc autostart fájlhoz!"
     else
         echo -e "\e[33mAutostart file already contains a transform command. No changes made.\e[0m"
     fi
@@ -450,7 +450,7 @@ fi
 
 # Hang kimenet kényszerítése HDMI-re?
 echo
-if ask_user "Do you want to force audio output to HDMI?" "y"; then
+if ask_user "Szeretnéd a hangkimenetet HDMI-re kényszeríteni?" "y"; then
     CONFIG_TXT="$BOOT_CONFIG"
     if [ -f "$CONFIG_TXT" ]; then
         # Check if dtparam=audio exists (uncommented)
@@ -460,20 +460,20 @@ if ask_user "Do you want to force audio output to HDMI?" "y"; then
                 echo -e "\e[33m$CONFIG_TXT already has dtparam=audio=off. No changes made.\e[0m"
             else
                 # Replace existing audio parameter
-                echo -e "\e[90mModifying existing dtparam=audio in $CONFIG_TXT...\e[0m"
+                echo -e "\e[90mMeglévő dtparam=audio módosítása itt: in $CONFIG_TXT...\e[0m"
                 sudo sed -i 's/^dtparam=audio=.*/dtparam=audio=off/' "$CONFIG_TXT"
-                echo -e "\e[32m✔\e[0m Audio parameter updated to force HDMI output!"
+                echo -e "\e[32m✔\e[0m Hangparaméter frissítve, HDMI kimenet kényszerítve!"
             fi
         elif grep -q "^#dtparam=audio=" "$CONFIG_TXT"; then
             # Uncomment and set to off
             echo -e "\e[90mUncommenting and setting dtparam=audio=off in $CONFIG_TXT...\e[0m"
             sudo sed -i 's/^#dtparam=audio=.*/dtparam=audio=off/' "$CONFIG_TXT"
-            echo -e "\e[32m✔\e[0m Audio parameter set to force HDMI output!"
+            echo -e "\e[32m✔\e[0m Hangparaméter beállítva HDMI kimenetre!"
         else
             # Add new parameter
             echo -e "\e[90mAdding dtparam=audio=off to $CONFIG_TXT...\e[0m"
             sudo bash -c "echo 'dtparam=audio=off' >> '$CONFIG_TXT'"
-            echo -e "\e[32m✔\e[0m Audio parameter added to force HDMI output!"
+            echo -e "\e[32m✔\e[0m Hangparaméter hozzáadva HDMI kimenethez!"
         fi
     else
         echo -e "\e[33m$CONFIG_TXT not found — skipping audio configuration.\e[0m"
@@ -482,13 +482,13 @@ fi
 
 # TV távirányító (HDMI-CEC) támogatás engedélyezése?
 echo
-if ask_user "Do you want to enable TV remote control via HDMI-CEC?" "n"; then
-    echo -e "\e[90mTelepítés CEC utilities, please wait...\e[0m"
+if ask_user "Szeretnéd engedélyezni a TV távirányítót HDMI-CEC-en keresztül?" "n"; then
+    echo -e "\e[90mCEC segédprogramok telepítése, kérlek várj...\e[0m"
     sudo apt-get install -y ir-keytable v4l-utils > /dev/null 2>&1 &
     spinner $! "Telepítés CEC utilities..."
 
     # Egyedi CEC billentyűtérkép könyvtár létrehozása
-    echo -e "\e[90mCreating custom CEC keymap...\e[0m"
+    echo -e "\e[90mEgyedi CEC billentyűtérkép létrehozása...\e[0m"
     sudo mkdir -p /etc/rc_keymaps
 
     # Egyedi billentyűtérkép fájl létrehozása
@@ -509,9 +509,9 @@ protocol = "cec"
 0x46 = "KEY_PAUSECD"
 EOL
 
-    echo -e "\e[32m✔\e[0m Custom CEC keymap created!"
+    echo -e "\e[32m✔\e[0m Egyedi CEC billentyűtérkép létrehozva!"
 
-    echo -e "\e[90mCreating CEC wrapper script...\e[0m"
+    echo -e "\e[90mCEC wrapper script létrehozása...\e[0m"
 sudo bash -c "cat > /usr/local/bin/cec-setup.sh" << 'EOL'
 #!/bin/bash
 set -e
@@ -554,10 +554,10 @@ exit 0
 EOL
 
 sudo chmod +x /usr/local/bin/cec-setup.sh
-echo -e "\e[32m✔\e[0m CEC wrapper script created at /usr/local/bin/cec-setup.sh"
+echo -e "\e[32m✔\e[0m CEC wrapper script létrehozva itt: /usr/local/bin/cec-setup.sh"
 
     # systemd szolgáltatás létrehozása CEC beállításhoz
-    echo -e "\e[90mCreating CEC setup service...\e[0m"
+    echo -e "\e[90mCEC beállító szolgáltatás létrehozása...\e[0m"
     sudo bash -c "cat > /etc/systemd/system/cec-setup.service" << 'EOL'
 [Unit]
 Description=CEC Remote Control Setup
@@ -574,13 +574,13 @@ WantedBy=multi-user.target
 EOL
 
     # Szolgáltatás engedélyezése
-    echo -e "\e[90mEnabling CEC setup service...\e[0m"
+    echo -e "\e[90mCEC beállító szolgáltatás engedélyezése...\e[0m"
     sudo systemctl daemon-reload > /dev/null 2>&1
     sudo systemctl enable cec-setup.service > /dev/null 2>&1 &
-    spinner $! "Enabling CEC service..."
+    spinner $! "CEC szolgáltatás engedélyezése..."
 
-    echo -e "\e[32m✔\e[0m TV remote CEC support configured successfully!"
-    echo -e "\e[90mNote: Make sure HDMI-CEC (SimpLink/Anynet+/Bravia Sync) is enabled on your TV.\e[0m"
+    echo -e "\e[32m✔\e[0m TV távirányító (CEC) támogatás sikeresen beállítva!"
+    echo -e "\e[90mMegjegyzés: Győződj meg róla, hogy a HDMI-CEC (SimpLink/Anynet+/Bravia Sync) is enabled on your TV.\e[0m"
 fi
 
 # apt gyorsítótárak takarítása
