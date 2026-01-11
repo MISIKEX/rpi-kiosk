@@ -294,7 +294,7 @@ if ask_user "Do you want to install the splash screen?" "y"; then
 
         # Download and replace the splash.png with custom logo
         echo -e "\e[90mDownloading custom splash logo...\e[0m"
-        SPLASH_URL="https://raw.githubusercontent.com/TOLDOTECHNIK/Raspberry-Pi-Kiosk-Display-System/main/_assets/splashscreens/splash.png"
+        SPLASH_URL="https://raw.githubusercontent.com/MISIKEX/rpi-kiosk/main/_assets/splashscreens/splash.png"
         SPLASH_PATH="/usr/share/plymouth/themes/pix/splash.png"
 
         if sudo wget -q "$SPLASH_URL" -O "$SPLASH_PATH"; then
