@@ -127,8 +127,8 @@ fi
 # Autostart (Chromium) script létrehozása labwc-hez?
 echo
 if ask_user "Szeretnél Chromium autostart scriptet létrehozni labwc-hez?" "y"; then
-    read -p "Add meg a Chromiumban megnyitandó URL-t [default: https://webglsamples.org...]: " USER_URL
-    USER_URL="${USER_URL:-https://webglsamples.org/aquarium/aquarium.html}"
+    read -p "Add meg a Chromiumban megnyitandó URL-t [default: https://planka.athq.cc]: " USER_URL
+    USER_URL="${USER_URL:-https://planka.athq.cc}"
 
     # Inkognitó mód indítása? (alapértelmezett: nem)
     echo
