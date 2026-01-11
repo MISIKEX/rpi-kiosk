@@ -1,19 +1,6 @@
 #!/bin/bash
 
-# kiosk_setup.sh
-# Tested for interactive use on Raspberry Pi OS / Debian-based systems.
-# Do NOT run as root. Run as a regular user with sudo privileges.
-#
-# History
-# 2024-10-22 v1.0: Initial release
-# 2024-11-04 V1.1: Switch from wayfire to labwc
-# 2024-11-13 V1.2: Added setup of wlr-randr
-# 2025-10-07 v1.3: Smart chromium package detection + robustness fixes
-# 2025-10-08 v1.4: Added screen rotation option, network wait before launching browser, auto-hide mouse cursor
-# 2025-10-09 v1.5: Added audio to HDMI option, splash screen improvements
-# 2025-10-10 v1.6: Added TV remote CEC support
-
-# Function to display a spinner with additional message
+# Spinner megjelenítése kiegészítő üzenettel
 spinner() {
     local pid=$1
     local message=$2
@@ -31,17 +18,17 @@ spinner() {
     tput cnorm 2>/dev/null || true
 }
 
-# Ensure not run as root
+# Ellenőrzés: ne fusson rootként
 if [ "$(id -u)" -eq 0 ]; then
   echo "This script should not be run as root. Please run as a regular user with sudo permissions."
   exit 1
 fi
 
-# Current user and home dir
+# Aktuális felhasználó és home könyvtár
 CURRENT_USER=$(whoami)
 HOME_DIR=$(eval echo "~$CURRENT_USER")
 
-# Function to prompt the user for y/n input with default value
+# Függvény igen/nem kérdéshez alapértelmezett értékkel
 ask_user() {
     local prompt="$1"
     local default="$2"
@@ -65,7 +52,7 @@ ask_user() {
     done
 }
 
-# update the package list?
+# Csomaglista frissítése?
 echo
 if ask_user "Do you want to update the package list?" "y"; then
     echo -e "\e[90mUpdating the package list, please wait...\e[0m"
@@ -73,7 +60,7 @@ if ask_user "Do you want to update the package list?" "y"; then
     spinner $! "Updating package list..."
 fi
 
-# upgrade installed packages?
+# Telepített csomagok frissítése?
 echo
 if ask_user "Do you want to upgrade installed packages?" "y"; then
     echo -e "\e[90mUpgrading installed packages. THIS MAY TAKE SOME TIME, please wait...\e[0m"
@@ -81,7 +68,7 @@ if ask_user "Do you want to upgrade installed packages?" "y"; then
     spinner $! "Upgrading installed packages..."
 fi
 
-# install Wayland/labwc packages?
+# Wayland / labwc csomagok telepítése?
 echo
 if ask_user "Do you want to install Wayland and labwc packages?" "y"; then
     echo -e "\e[90mInstalling Wayland packages, please wait...\e[0m"
@@ -89,10 +76,10 @@ if ask_user "Do you want to install Wayland and labwc packages?" "y"; then
     spinner $! "Installing Wayland packages..."
 fi
 
-# --- Smart Chromium install + autostart snippet ---
+# --- Intelligens Chromium telepítés + autostart rész ---
 echo
 if ask_user "Do you want to install Chromium Browser?" "y"; then
-    # detect available chromium package name (prefer 'chromium')
+    # Elérhető Chromium csomag nevének felismerése (előnyben: 'chromium')
     CHROMIUM_PKG=""
     if apt-cache show chromium >/dev/null 2>&1; then
         CHROMIUM_PKG="chromium"
@@ -109,7 +96,7 @@ if ask_user "Do you want to install Chromium Browser?" "y"; then
     fi
 fi
 
-# install and configure greetd?
+# greetd telepítése és beállítása?
 echo
 if ask_user "Do you want to install and configure greetd for auto start of labwc?" "y"; then
     echo -e "\e[90mInstalling greetd for auto start of labwc, please wait...\e[0m"
@@ -137,20 +124,20 @@ EOL"
     spinner $! "Setting graphical target..."
 fi
 
-# create an autostart script for labwc?
+# Autostart (Chromium) script létrehozása labwc-hez?
 echo
 if ask_user "Do you want to create an autostart (chromium) script for labwc?" "y"; then
     read -p "Enter the URL to open in Chromium [default: https://webglsamples.org...]: " USER_URL
     USER_URL="${USER_URL:-https://webglsamples.org/aquarium/aquarium.html}"
 
-    # Ask about incognito mode (default: no)
+    # Inkognitó mód indítása? (alapértelmezett: nem)
     echo
     INCOGNITO_FLAG=""
     if ask_user "Start browser in incognito mode?" "n"; then
         INCOGNITO_FLAG="--incognito "
     fi
 
-    # Ask about network wait (default: no)
+    # Várakozás hálózatra indítás előtt? (alapértelmezett: nem)
     echo
     NETWORK_WAIT=""
     if ask_user "Wait for network connectivity before launching Chromium?" "n"; then
@@ -173,7 +160,7 @@ if ask_user "Do you want to create an autostart (chromium) script for labwc?" "y
     mkdir -p "$LABWC_AUTOSTART_DIR"
     LABWC_AUTOSTART_FILE="$LABWC_AUTOSTART_DIR/autostart"
 
-    # find the installed binary (try both names) — prefer binary in PATH
+    # Telepített bináris keresése (mindkét név), PATH előnyben
     CHROMIUM_BIN="$(command -v chromium || command -v chromium-browser || true)"
 
     if [ -z "$CHROMIUM_BIN" ]; then
@@ -188,10 +175,10 @@ if ask_user "Do you want to create an autostart (chromium) script for labwc?" "y
         fi
     fi
 
-    # Ensure autostart file exists
+    # Autostart fájl létezésének biztosítása
     touch "$LABWC_AUTOSTART_FILE"
 
-    # write autostart entry if not present
+    # Autostart bejegyzés hozzáadása, ha még nincs
     if grep -q -E "chromium|chromium-browser" "$LABWC_AUTOSTART_FILE" 2>/dev/null; then
         echo "Chromium autostart entry already exists in $LABWC_AUTOSTART_FILE."
     else
@@ -199,7 +186,7 @@ if ask_user "Do you want to create an autostart (chromium) script for labwc?" "y
 
         if [ -n "$NETWORK_WAIT" ]; then
             cat >> "$LABWC_AUTOSTART_FILE" << EOL
-# Launch Chromium in kiosk mode (with network wait)
+# Chromium indítása kiosk módban (hálózati várakozással)
 (
 $NETWORK_WAIT
     $CHROMIUM_BIN ${INCOGNITO_FLAG}--autoplay-policy=no-user-gesture-required --kiosk $USER_URL
@@ -213,30 +200,30 @@ EOL
     fi
 fi
 
-# configure cursor hiding for labwc?
+# Egérkurzor elrejtése kiosk módban?
 echo
 if ask_user "Do you want to hide the mouse cursor in kiosk mode?" "y"; then
-    # Install wtype if not present
+    # wtype telepítése, ha még nincs jelen
     if ! command -v wtype &> /dev/null; then
         echo -e "\e[90mInstalling wtype for cursor control, please wait...\e[0m"
         sudo apt install -y wtype > /dev/null 2>&1 &
         spinner $! "Installing wtype..."
     fi
 
-    # Create labwc config directory
+    # labwc konfigurációs könyvtár létrehozása
     LABWC_CONFIG_DIR="$HOME_DIR/.config/labwc"
     mkdir -p "$LABWC_CONFIG_DIR"
     
-    # Create or modify rc.xml
+    # rc.xml létrehozása vagy módosítása
     RC_XML="$LABWC_CONFIG_DIR/rc.xml"
 
     if [ -f "$RC_XML" ]; then
-        # Check if HideCursor already exists
+        # Ellenőrzés: létezik-e már HideCursor beállítás
         if grep -q "HideCursor" "$RC_XML" 2>/dev/null; then
             echo -e "\e[33mrc.xml already contains HideCursor configuration. No changes made.\e[0m"
         else
             echo -e "\e[90mAdding HideCursor keybind to existing rc.xml...\e[0m"
-            # Insert before closing </openbox_config> or </keyboard> tag
+            # Beszúrás a </keyboard> záró tag elé
             if grep -q "</keyboard>" "$RC_XML"; then
                 sudo sed -i 's|</keyboard>|  <keybind key="W-h">\n    <action name="HideCursor"/>\n    <action name="WarpCursor" to="output" x="1" y="1"/>\n  </keybind>\n</keyboard>|' "$RC_XML"
             else
@@ -244,7 +231,7 @@ if ask_user "Do you want to hide the mouse cursor in kiosk mode?" "y"; then
             fi
         fi
     else
-        # Create new rc.xml with HideCursor configuration
+        # Új rc.xml létrehozása HideCursor beállítással
         echo -e "\e[90mCreating rc.xml with HideCursor configuration...\e[0m"
         cat > "$RC_XML" << 'EOL'
 <?xml version="1.0"?>
@@ -260,7 +247,7 @@ EOL
         echo -e "\e[32m✔\e[0m rc.xml created successfully!"
     fi
 
-    # Add wtype command to autostart
+    # wtype parancs hozzáadása az autostarthoz
     LABWC_AUTOSTART_FILE="$LABWC_CONFIG_DIR/autostart"
     touch "$LABWC_AUTOSTART_FILE"
 
@@ -270,29 +257,29 @@ EOL
         echo -e "\e[90mAdding cursor hiding command to autostart...\e[0m"
         cat >> "$LABWC_AUTOSTART_FILE" << 'EOL'
 
-# Hide cursor on startup (simulate Win+H hotkey)
+# Kurzor elrejtése indításkor (Win+H billentyű szimulálása)
 sleep 1 && wtype -M logo -k h -m logo &
 EOL
         echo -e "\e[32m✔\e[0m Cursor hiding configured successfully!"
     fi
 fi
 
-# install splash screen?
+# Splash képernyő telepítése?
 echo
 if ask_user "Do you want to install the splash screen?" "y"; then
-    # Install Plymouth and themes including pix-plym-splash
+    # Plymouth és témák telepítése (pix-plym-splash)
     echo -e "\e[90mInstalling splash screen and themes. THIS MAY TAKE SOME TIME, please wait...\e[0m"
     sudo apt-get install -y plymouth plymouth-themes pix-plym-splash > /dev/null 2>&1 &
     spinner $! "Installing splash screen..."
 
-    # Check if pix theme is available
+    # pix téma elérhetőségének ellenőrzése
     if [ ! -e /usr/share/plymouth/themes/pix/pix.script ]; then
         echo -e "\e[33mWarning: pix theme not found after installation. Splash screen may not work correctly.\e[0m"
     else
         echo -e "\e[90mSetting splash screen theme to pix...\e[0m"
         sudo plymouth-set-default-theme pix
 
-        # Download and replace the splash.png with custom logo
+        # Egyedi splash logo letöltése és beállítása
         echo -e "\e[90mDownloading custom splash logo...\e[0m"
         SPLASH_URL="https://raw.githubusercontent.com/MISIKEX/rpi-kiosk/main/_assets/splashscreens/splash.png"
         SPLASH_PATH="/usr/share/plymouth/themes/pix/splash.png"
@@ -338,7 +325,7 @@ if ask_user "Do you want to install the splash screen?" "y"; then
     fi
 fi
 
-# Configure a resolution
+# Képernyőfelbontás beállítása
 echo
 if ask_user "Do you want to set the screen resolution in cmdline.txt and the labwc autostart file?" "y"; then
 
@@ -350,7 +337,7 @@ if ask_user "Do you want to set the screen resolution in cmdline.txt and the lab
         echo -e "\e[32mrequired tool installed successfully!\e[0m"
     fi
 
-    # Try to read EDID; many Pi setups use /sys/class/drm/card1-HDMI-A-1/edid or card0
+    # EDID kiolvasása (gyakori útvonalok: card1 vagy card0)
     EDID_PATH=""
     if [ -r /sys/class/drm/card1-HDMI-A-1/edid ]; then
         EDID_PATH="/sys/class/drm/card1-HDMI-A-1/edid"
@@ -372,13 +359,13 @@ if ask_user "Do you want to set the screen resolution in cmdline.txt and the lab
         done <<< "$edid_output"
     fi
 
-    # Fallback to default list if no resolutions are found
+    # Alapértelmezett lista használata, ha nincs EDID eredmény
     if [ ${#available_resolutions[@]} -eq 0 ]; then
         echo -e "\e[33mNo resolutions found via EDID. Using default list.\e[0m"
         available_resolutions=("1920x1080@60" "1280x720@60" "1024x768@60" "1600x900@60" "1366x768@60")
     fi
 
-    # Prompt user to choose a resolution
+    # Felhasználó felbontásválasztása
     echo -e "\e[94mPlease choose a resolution (type in the number):\e[0m"
     select RESOLUTION in "${available_resolutions[@]}"; do
         if [[ -n "$RESOLUTION" ]]; then
@@ -389,7 +376,7 @@ if ask_user "Do you want to set the screen resolution in cmdline.txt and the lab
         fi
     done
 
-    # Add the selected resolution to /boot/firmware/cmdline.txt if not already present
+    # Kiválasztott felbontás hozzáadása a cmdline.txt-hez
     CMDLINE_FILE="/boot/firmware/cmdline.txt"
     if [ -f "$CMDLINE_FILE" ]; then
         if ! grep -q "video=" "$CMDLINE_FILE"; then
@@ -415,7 +402,7 @@ if ask_user "Do you want to set the screen resolution in cmdline.txt and the lab
     fi
 fi
 
-# Configure screen orientation
+# Képernyő elforgatásának beállítása
 echo
 if ask_user "Do you want to set the screen orientation (rotation)?" "n"; then
     echo -e "\e[94mPlease choose an orientation:\e[0m"
@@ -433,7 +420,7 @@ if ask_user "Do you want to set the screen orientation (rotation)?" "n"; then
         fi
     done
 
-    # Add to labwc autostart
+    # Hozzáadás a labwc autostarthoz
     AUTOSTART_FILE="$HOME_DIR/.config/labwc/autostart"
     touch "$AUTOSTART_FILE"
     if ! grep -q "wlr-randr.*--transform" "$AUTOSTART_FILE" 2>/dev/null; then
@@ -444,7 +431,7 @@ if ask_user "Do you want to set the screen orientation (rotation)?" "n"; then
     fi
 fi
 
-# Force audio to HDMI?
+# Hang kimenet kényszerítése HDMI-re?
 echo
 if ask_user "Do you want to force audio output to HDMI?" "y"; then
     CONFIG_TXT="/boot/firmware/config.txt"
@@ -476,18 +463,18 @@ if ask_user "Do you want to force audio output to HDMI?" "y"; then
     fi
 fi
 
-# Enable TV remote CEC support?
+# TV távirányító (HDMI-CEC) támogatás engedélyezése?
 echo
 if ask_user "Do you want to enable TV remote control via HDMI-CEC?" "n"; then
     echo -e "\e[90mInstalling CEC utilities, please wait...\e[0m"
     sudo apt-get install -y ir-keytable > /dev/null 2>&1 &
     spinner $! "Installing CEC utilities..."
 
-    # Create custom CEC keymap directory
+    # Egyedi CEC billentyűtérkép könyvtár létrehozása
     echo -e "\e[90mCreating custom CEC keymap...\e[0m"
     sudo mkdir -p /etc/rc_keymaps
 
-    # Create custom keymap file
+    # Egyedi billentyűtérkép fájl létrehozása
     sudo bash -c "cat > /etc/rc_keymaps/custom-cec.toml" << 'EOL'
 [[protocols]]
 name = "custom_cec"
@@ -507,7 +494,7 @@ EOL
 
     echo -e "\e[32m✔\e[0m Custom CEC keymap created!"
 
-    # Create systemd service for CEC setup
+    # systemd szolgáltatás létrehozása CEC beállításhoz
     echo -e "\e[90mCreating CEC setup service...\e[0m"
     sudo bash -c "cat > /etc/systemd/system/cec-setup.service" << 'EOL'
 [Unit]
@@ -528,7 +515,7 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOL
 
-    # Enable the service
+    # Szolgáltatás engedélyezése
     echo -e "\e[90mEnabling CEC setup service...\e[0m"
     sudo systemctl daemon-reload > /dev/null 2>&1
     sudo systemctl enable cec-setup.service > /dev/null 2>&1 &
@@ -538,12 +525,12 @@ EOL
     echo -e "\e[90mNote: Make sure HDMI-CEC (SimpLink/Anynet+/Bravia Sync) is enabled on your TV.\e[0m"
 fi
 
-# cleaning up apt caches
+# apt gyorsítótárak takarítása
 echo -e "\e[90mCleaning up apt caches, please wait...\e[0m"
 sudo apt clean > /dev/null 2>&1 &
 spinner $! "Cleaning up apt caches..."
 
-# Print completion message and ask for reboot
+# Befejező üzenet és újraindítás felajánlása
 echo -e "\e[32m✔\e[0m \e[32mSetup completed successfully!\e[0m"
 echo
 if ask_user "Do you want to reboot now?" "n"; then
