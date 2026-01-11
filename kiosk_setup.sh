@@ -328,7 +328,7 @@ else
   # --- EXTRA: greetd csomag törlése N esetén (opcionális) ---
   if dpkg -s greetd >/dev/null 2>&1; then
     echo
-    if ask_user "Szeretnéd eltávolítani a greetd csomagot is (purge)?" "n"; then
+    if ask_user "Szeretnéd eltávolítani a greetd csomagot is (purge)?" "y"; then
       echo -e "\e[90mgreetd eltávolítása (purge)...\e[0m"
       sudo apt purge -y greetd > /dev/null 2>&1 &
       spinner $! "greetd purge..."
