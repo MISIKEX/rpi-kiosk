@@ -281,11 +281,15 @@ if ask_user "Szeretnéd telepíteni a Chromium böngészőt?" "y"; then
 fi
 
 # =========================
-# 5) greetd telepítése és beállítása?
+# 5) greetd telepítése és beállítása? (LightDM <-> greetd váltó)
 # =========================
 echo
-if ask_user "Szeretnéd telepíteni és beállítani a greetd-t a labwc automatikus indításához?" "y"; then
-  echo -e "\e[90mgreetd telepítése folyamatban, kérlek várj...\e[0m"
+if ask_user "Szeretnéd telepíteni és használni a greetd-t (kioszk labwc autologin)?" "n"; then
+  # --- Y ág: greetd bekapcs, lightdm kikapcs ---
+  echo -e "\e[90mLightDM leállítása és letiltása (ha fut/telepítve van)...\e[0m"
+  sudo systemctl disable --now lightdm > /dev/null 2>&1 || true
+
+  echo -e "\e[90mgreetd telepítése folyamatban...\e[0m"
   sudo apt install -y greetd > /dev/null 2>&1 &
   spinner $! "greetd telepítése..."
 
@@ -301,13 +305,41 @@ EOL"
 
   echo -e "\e[32m✔\e[0m /etc/greetd/config.toml frissítve!"
 
-  echo -e "\e[90mgreetd szolgáltatás engedélyezése...\e[0m"
-  sudo systemctl enable greetd > /dev/null 2>&1 &
-  spinner $! "greetd engedélyezése..."
+  echo -e "\e[90mgreetd szolgáltatás engedélyezése és indítása...\e[0m"
+  sudo systemctl enable --now greetd > /dev/null 2>&1 &
+  spinner $! "greetd enable --now..."
 
   echo -e "\e[90mGrafikus target beállítása alapértelmezettként...\e[0m"
   sudo systemctl set-default graphical.target > /dev/null 2>&1 &
-  spinner $! "Grafikus target beállítása..."
+  spinner $! "Graphical target beállítása..."
+
+else
+  # --- N ág: greetd kikapcs, lightdm vissza ---
+  echo -e "\e[90mgreetd leállítása és letiltása (ha telepítve van)...\e[0m"
+  sudo systemctl disable --now greetd > /dev/null 2>&1 || true
+
+  echo -e "\e[90mLightDM engedélyezése és indítása (ha telepítve van)...\e[0m"
+  sudo systemctl enable --now lightdm > /dev/null 2>&1 || true
+
+  echo -e "\e[90mGrafikus target beállítása alapértelmezettként...\e[0m"
+  sudo systemctl set-default graphical.target > /dev/null 2>&1 || true
+  echo -e "\e[32m✔\e[0m LightDM mód visszaállítva (ahol elérhető)."
+
+  # --- EXTRA: greetd csomag törlése N esetén (opcionális) ---
+  if dpkg -s greetd >/dev/null 2>&1; then
+    echo
+    if ask_user "Szeretnéd eltávolítani a greetd csomagot is (purge)?" "n"; then
+      echo -e "\e[90mgreetd eltávolítása (purge)...\e[0m"
+      sudo apt purge -y greetd > /dev/null 2>&1 &
+      spinner $! "greetd purge..."
+
+      echo -e "\e[90mFelesleges csomagok takarítása (autoremove)...\e[0m"
+      sudo apt autoremove -y > /dev/null 2>&1 &
+      spinner $! "autoremove..."
+
+      echo -e "\e[32m✔\e[0m greetd eltávolítva."
+    fi
+  fi
 fi
 
 # =========================
