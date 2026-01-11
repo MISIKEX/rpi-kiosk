@@ -20,7 +20,7 @@ spinner() {
 
 # Ellenőrzés: ne fusson rootként
 if [ "$(id -u)" -eq 0 ]; then
-  echo "This script should not be run as root. Please run as a regular user with sudo permissions."
+  echo "Ezt a scriptet nem szabad rootként futtatni. Kérlek normál felhasználóként futtasd, sudo jogosultsággal."
   exit 1
 fi
 
@@ -47,38 +47,38 @@ ask_user() {
         case $yn in
             [Yy]* ) return 0;;
             [Nn]* ) return 1;;
-            * ) echo "Please answer yes (y) or no (n).";;
+            * ) echo "Kérlek igen (y) vagy nem (n) választ adj.";;
         esac
     done
 }
 
 # Csomaglista frissítése?
 echo
-if ask_user "Do you want to update the package list?" "y"; then
-    echo -e "\e[90mUpdating the package list, please wait...\e[0m"
+if ask_user "Szeretnéd frissíteni a csomaglistát?" "y"; then
+    echo -e "\e[90mCsomaglista frissítése folyamatban, kérlek várj...\e[0m"
     sudo apt update > /dev/null 2>&1 &
-    spinner $! "Updating package list..."
+    spinner $! "Csomaglista frissítése..."
 fi
 
 # Telepített csomagok frissítése?
 echo
-if ask_user "Do you want to upgrade installed packages?" "y"; then
-    echo -e "\e[90mUpgrading installed packages. THIS MAY TAKE SOME TIME, please wait...\e[0m"
+if ask_user "Szeretnéd frissíteni a telepített csomagokat?" "y"; then
+    echo -e "\e[90mTelepített csomagok frissítése. EZ ELTARTHAT EGY IDEIG, kérlek várj...\e[0m"
     sudo apt upgrade -y > /dev/null 2>&1 &
-    spinner $! "Upgrading installed packages..."
+    spinner $! "Telepített csomagok frissítése..."
 fi
 
 # Wayland / labwc csomagok telepítése?
 echo
-if ask_user "Do you want to install Wayland and labwc packages?" "y"; then
-    echo -e "\e[90mInstalling Wayland packages, please wait...\e[0m"
+if ask_user "Szeretnéd telepíteni a Wayland és labwc csomagokat?" "y"; then
+    echo -e "\e[90mWayland csomagok telepítése folyamatban, kérlek várj...\e[0m"
     sudo apt install --no-install-recommends -y labwc wlr-randr seatd > /dev/null 2>&1 &
-    spinner $! "Installing Wayland packages..."
+    spinner $! "Wayland csomagok telepítése..."
 fi
 
 # --- Intelligens Chromium telepítés + autostart rész ---
 echo
-if ask_user "Do you want to install Chromium Browser?" "y"; then
+if ask_user "Szeretnéd telepíteni a Chromium böngészőt?" "y"; then
     # Elérhető Chromium csomag nevének felismerése (előnyben: 'chromium')
     CHROMIUM_PKG=""
     if apt-cache show chromium >/dev/null 2>&1; then
@@ -88,22 +88,22 @@ if ask_user "Do you want to install Chromium Browser?" "y"; then
     fi
 
     if [ -z "$CHROMIUM_PKG" ]; then
-        echo -e "\e[33mNo chromium package found in APT. You may need to enable the appropriate repository or install manually.\e[0m"
+        echo -e "\e[33mNem található Chromium csomag az APT-ben. Lehet, hogy engedélyezni kell egy megfelelő tárolót, vagy kézzel kell telepíteni.\e[0m"
     else
-        echo -e "\e[90mInstalling $CHROMIUM_PKG. THIS MAY TAKE SOME TIME, please wait...\e[0m"
+        echo -e "\e[90mTelepítés $CHROMIUM_PKG. THIS MAY TAKE SOME TIME, please wait...\e[0m"
         sudo apt install --no-install-recommends -y "$CHROMIUM_PKG" > /dev/null 2>&1 &
-        spinner $! "Installing $CHROMIUM_PKG..."
+        spinner $! "Telepítés $CHROMIUM_PKG..."
     fi
 fi
 
 # greetd telepítése és beállítása?
 echo
-if ask_user "Do you want to install and configure greetd for auto start of labwc?" "y"; then
-    echo -e "\e[90mInstalling greetd for auto start of labwc, please wait...\e[0m"
+if ask_user "Szeretnéd telepíteni és beállítani a greetd-t a labwc automatikus indításához?" "y"; then
+    echo -e "\e[90mTelepítés greetd for auto start of labwc, please wait...\e[0m"
     sudo apt install -y greetd > /dev/null 2>&1 &
-    spinner $! "Installing greetd..."
+    spinner $! "Telepítés greetd..."
 
-    echo -e "\e[90mCreating or overwriting /etc/greetd/config.toml...\e[0m"
+    echo -e "\e[90m/etc/greetd/config.toml létrehozása vagy felülírása...\e[0m"
     sudo mkdir -p /etc/greetd
     sudo bash -c "cat <<EOL > /etc/greetd/config.toml
 [terminal]
@@ -113,34 +113,34 @@ command = \"/usr/bin/labwc\"
 user = \"$CURRENT_USER\"
 EOL"
 
-    echo -e "\e[32m✔\e[0m /etc/greetd/config.toml has been created or overwritten successfully!"
+    echo -e "\e[32m✔\e[0m /etc/greetd/config.toml sikeresen létrehozva vagy felülírva!"
 
-    echo -e "\e[90mEnabling greetd service...\e[0m"
+    echo -e "\e[90mgreetd szolgáltatás engedélyezése...\e[0m"
     sudo systemctl enable greetd > /dev/null 2>&1 &
-    spinner $! "Enabling greetd service..."
+    spinner $! "greetd szolgáltatás engedélyezése..."
 
-    echo -e "\e[90mSetting graphical target as the default...\e[0m"
+    echo -e "\e[90mGrafikus target beállítása alapértelmezettként...\e[0m"
     sudo systemctl set-default graphical.target > /dev/null 2>&1 &
     spinner $! "Setting graphical target..."
 fi
 
 # Autostart (Chromium) script létrehozása labwc-hez?
 echo
-if ask_user "Do you want to create an autostart (chromium) script for labwc?" "y"; then
-    read -p "Enter the URL to open in Chromium [default: https://webglsamples.org...]: " USER_URL
+if ask_user "Szeretnél Chromium autostart scriptet létrehozni labwc-hez?" "y"; then
+    read -p "Add meg a Chromiumban megnyitandó URL-t [default: https://webglsamples.org...]: " USER_URL
     USER_URL="${USER_URL:-https://webglsamples.org/aquarium/aquarium.html}"
 
     # Inkognitó mód indítása? (alapértelmezett: nem)
     echo
     INCOGNITO_FLAG=""
-    if ask_user "Start browser in incognito mode?" "n"; then
+    if ask_user "Induljon a böngésző inkognitó módban?" "n"; then
         INCOGNITO_FLAG="--incognito "
     fi
 
     # Várakozás hálózatra indítás előtt? (alapértelmezett: nem)
     echo
     NETWORK_WAIT=""
-    if ask_user "Wait for network connectivity before launching Chromium?" "n"; then
+    if ask_user "Várjon hálózati kapcsolatra a Chromium indítása előtt?" "n"; then
         read -p "Enter host to ping for network check [default: 8.8.8.8]: " PING_HOST
         PING_HOST="${PING_HOST:-8.8.8.8}"
         read -p "Enter maximum wait time in seconds [default: 30]: " MAX_WAIT
@@ -171,7 +171,7 @@ if ask_user "Do you want to create an autostart (chromium) script for labwc?" "y
             CHROMIUM_BIN="/usr/bin/chromium-browser"
         else
             CHROMIUM_BIN="/usr/bin/chromium"
-            echo -e "\e[33mWarning: couldn't find chromium binary in PATH. Using $CHROMIUM_BIN in autostart — adjust if needed.\e[0m"
+            echo -e "\e[33mFigyelmeztetés: nem található Chromium bináris a PATH-ban. Using $CHROMIUM_BIN in autostart — adjust if needed.\e[0m"
         fi
     fi
 
@@ -180,9 +180,9 @@ if ask_user "Do you want to create an autostart (chromium) script for labwc?" "y
 
     # Autostart bejegyzés hozzáadása, ha még nincs
     if grep -q -E "chromium|chromium-browser" "$LABWC_AUTOSTART_FILE" 2>/dev/null; then
-        echo "Chromium autostart entry already exists in $LABWC_AUTOSTART_FILE."
+        echo "Chromium autostart bejegyzés már létezik in $LABWC_AUTOSTART_FILE."
     else
-        echo -e "\e[90mAdding Chromium to labwc autostart script...\e[0m"
+        echo -e "\e[90mChromium hozzáadása a labwc autostart scriphez...\e[0m"
 
         if [ -n "$NETWORK_WAIT" ]; then
             cat >> "$LABWC_AUTOSTART_FILE" << EOL
@@ -196,18 +196,18 @@ EOL
             echo "$CHROMIUM_BIN ${INCOGNITO_FLAG}--autoplay-policy=no-user-gesture-required --kiosk $USER_URL &" >> "$LABWC_AUTOSTART_FILE"
         fi
 
-        echo -e "\e[32m✔\e[0m labwc autostart script has been created or updated at $LABWC_AUTOSTART_FILE."
+        echo -e "\e[32m✔\e[0m A labwc autostart script létrejött vagy frissült at $LABWC_AUTOSTART_FILE."
     fi
 fi
 
 # Egérkurzor elrejtése kiosk módban?
 echo
-if ask_user "Do you want to hide the mouse cursor in kiosk mode?" "y"; then
+if ask_user "Szeretnéd elrejteni az egérkurzort kiosk módban?" "y"; then
     # wtype telepítése, ha még nincs jelen
     if ! command -v wtype &> /dev/null; then
-        echo -e "\e[90mInstalling wtype for cursor control, please wait...\e[0m"
+        echo -e "\e[90mTelepítés wtype for cursor control, please wait...\e[0m"
         sudo apt install -y wtype > /dev/null 2>&1 &
-        spinner $! "Installing wtype..."
+        spinner $! "Telepítés wtype..."
     fi
 
     # labwc konfigurációs könyvtár létrehozása
@@ -220,19 +220,19 @@ if ask_user "Do you want to hide the mouse cursor in kiosk mode?" "y"; then
     if [ -f "$RC_XML" ]; then
         # Ellenőrzés: létezik-e már HideCursor beállítás
         if grep -q "HideCursor" "$RC_XML" 2>/dev/null; then
-            echo -e "\e[33mrc.xml already contains HideCursor configuration. No changes made.\e[0m"
+            echo -e "\e[33mAz rc.xml már tartalmaz HideCursor beállítást. Nem történt módosítás.\e[0m"
         else
-            echo -e "\e[90mAdding HideCursor keybind to existing rc.xml...\e[0m"
+            echo -e "\e[90mHideCursor billentyűparancs hozzáadása a meglévő rc.xml-hez...\e[0m"
             # Beszúrás a </keyboard> záró tag elé
             if grep -q "</keyboard>" "$RC_XML"; then
                 sudo sed -i 's|</keyboard>|  <keybind key="W-h">\n    <action name="HideCursor"/>\n    <action name="WarpCursor" to="output" x="1" y="1"/>\n  </keybind>\n</keyboard>|' "$RC_XML"
             else
-                echo -e "\e[33mCouldn't find </keyboard> tag in rc.xml. Please add HideCursor keybind manually.\e[0m"
+                echo -e "\e[33mNem található </keyboard> tag az rc.xml-ben. Kérlek add hozzá kézzel a HideCursor billentyűparancsot.\e[0m"
             fi
         fi
     else
         # Új rc.xml létrehozása HideCursor beállítással
-        echo -e "\e[90mCreating rc.xml with HideCursor configuration...\e[0m"
+        echo -e "\e[90mrc.xml létrehozása HideCursor beállítással...\e[0m"
         cat > "$RC_XML" << 'EOL'
 <?xml version="1.0"?>
 <labwc_config>
@@ -244,7 +244,7 @@ if ask_user "Do you want to hide the mouse cursor in kiosk mode?" "y"; then
   </keyboard>
 </labwc_config>
 EOL
-        echo -e "\e[32m✔\e[0m rc.xml created successfully!"
+        echo -e "\e[32m✔\e[0m rc.xml sikeresen létrehozva!"
     fi
 
     # wtype parancs hozzáadása az autostarthoz
@@ -252,46 +252,46 @@ EOL
     touch "$LABWC_AUTOSTART_FILE"
 
     if grep -q "wtype.*logo.*-k h" "$LABWC_AUTOSTART_FILE" 2>/dev/null; then
-        echo -e "\e[33mAutostart already contains cursor hiding command. No changes made.\e[0m"
+        echo -e "\e[33mAz autostart már tartalmaz kurzor elrejtő parancsot. Nem történt módosítás.\e[0m"
     else
-        echo -e "\e[90mAdding cursor hiding command to autostart...\e[0m"
+        echo -e "\e[90mKurzor elrejtő parancs hozzáadása az autostarthoz...\e[0m"
         cat >> "$LABWC_AUTOSTART_FILE" << 'EOL'
 
 # Kurzor elrejtése indításkor (Win+H billentyű szimulálása)
 sleep 1 && wtype -M logo -k h -m logo &
 EOL
-        echo -e "\e[32m✔\e[0m Cursor hiding configured successfully!"
+        echo -e "\e[32m✔\e[0m Kurzor elrejtése sikeresen beállítva!"
     fi
 fi
 
 # Splash képernyő telepítése?
 echo
-if ask_user "Do you want to install the splash screen?" "y"; then
+if ask_user "Szeretnéd telepíteni a splash képernyőt?" "y"; then
     # Plymouth és témák telepítése (pix-plym-splash)
-    echo -e "\e[90mInstalling splash screen and themes. THIS MAY TAKE SOME TIME, please wait...\e[0m"
+    echo -e "\e[90mTelepítés splash screen and themes. THIS MAY TAKE SOME TIME, please wait...\e[0m"
     sudo apt-get install -y plymouth plymouth-themes pix-plym-splash > /dev/null 2>&1 &
-    spinner $! "Installing splash screen..."
+    spinner $! "Telepítés splash screen..."
 
     # pix téma elérhetőségének ellenőrzése
     if [ ! -e /usr/share/plymouth/themes/pix/pix.script ]; then
-        echo -e "\e[33mWarning: pix theme not found after installation. Splash screen may not work correctly.\e[0m"
+        echo -e "\e[33mFigyelmeztetés: a pix téma nem található a telepítés után. A splash képernyő nem biztos, hogy megfelelően működik.\e[0m"
     else
-        echo -e "\e[90mSetting splash screen theme to pix...\e[0m"
+        echo -e "\e[90mSplash képernyő témájának beállítása pix-re...\e[0m"
         sudo plymouth-set-default-theme pix
 
         # Egyedi splash logo letöltése és beállítása
-        echo -e "\e[90mDownloading custom splash logo...\e[0m"
+        echo -e "\e[90mEgyedi splash logó letöltése...\e[0m"
         SPLASH_URL="https://raw.githubusercontent.com/MISIKEX/rpi-kiosk/main/_assets/splashscreens/splash.png"
         SPLASH_PATH="/usr/share/plymouth/themes/pix/splash.png"
 
         if sudo wget -q "$SPLASH_URL" -O "$SPLASH_PATH"; then
-            echo -e "\e[32m✔\e[0m Custom splash logo installed."
+            echo -e "\e[32m✔\e[0m Egyedi splash logó telepítve."
         else
-            echo -e "\e[33mWarning: Failed to download custom splash logo. Using default.\e[0m"
+            echo -e "\e[33mFigyelmeztetés: nem sikerült letölteni az egyedi splash logót. Az alapértelmezett kerül használatra.\e[0m"
         fi
 
         sudo update-initramfs -u > /dev/null 2>&1 &
-        spinner $! "Updating initramfs..."
+        spinner $! "initramfs frissítése..."
     fi
 
     CONFIG_TXT="/boot/firmware/config.txt"
@@ -331,9 +331,9 @@ if ask_user "Do you want to set the screen resolution in cmdline.txt and the lab
 
     # Check if edid-decode is installed; if not, install it
     if ! command -v edid-decode &> /dev/null; then
-        echo -e "\e[90mInstalling required tool edid-decode, please wait...\e[0m"
+        echo -e "\e[90mTelepítés required tool edid-decode, please wait...\e[0m"
         sudo apt install -y edid-decode > /dev/null 2>&1 &
-        spinner $! "Installing edid-decode..."
+        spinner $! "Telepítés edid-decode..."
         echo -e "\e[32mrequired tool installed successfully!\e[0m"
     fi
 
@@ -466,9 +466,9 @@ fi
 # TV távirányító (HDMI-CEC) támogatás engedélyezése?
 echo
 if ask_user "Do you want to enable TV remote control via HDMI-CEC?" "n"; then
-    echo -e "\e[90mInstalling CEC utilities, please wait...\e[0m"
+    echo -e "\e[90mTelepítés CEC utilities, please wait...\e[0m"
     sudo apt-get install -y ir-keytable > /dev/null 2>&1 &
-    spinner $! "Installing CEC utilities..."
+    spinner $! "Telepítés CEC utilities..."
 
     # Egyedi CEC billentyűtérkép könyvtár létrehozása
     echo -e "\e[90mCreating custom CEC keymap...\e[0m"
@@ -526,16 +526,16 @@ EOL
 fi
 
 # apt gyorsítótárak takarítása
-echo -e "\e[90mCleaning up apt caches, please wait...\e[0m"
+echo -e "\e[90mAPT gyorsítótárak takarítása, kérlek várj...\e[0m"
 sudo apt clean > /dev/null 2>&1 &
-spinner $! "Cleaning up apt caches..."
+spinner $! "APT gyorsítótárak takarítása..."
 
 # Befejező üzenet és újraindítás felajánlása
-echo -e "\e[32m✔\e[0m \e[32mSetup completed successfully!\e[0m"
+echo -e "\e[32m✔\e[0m \e[32mA beállítás sikeresen befejeződött!\e[0m"
 echo
-if ask_user "Do you want to reboot now?" "n"; then
-    echo -e "\e[90mRebooting system...\e[0m"
+if ask_user "Szeretnéd most újraindítani a rendszert?" "n"; then
+    echo -e "\e[90mRendszer újraindítása...\e[0m"
     sudo reboot
 else
-    echo -e "\e[33mPlease remember to reboot your system manually for all changes to take effect.\e[0m"
+    echo -e "\e[33mNe felejtsd el manuálisan újraindítani a rendszert, hogy minden változás érvénybe lépjen.\e[0m"
 fi
