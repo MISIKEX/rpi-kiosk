@@ -123,22 +123,18 @@ write_kiosk_block() {
   remove_kiosk_block "$file"
 
   if is_root_file "$file"; then
-
-    sudo bash -c "cat >> '$file' <<'EOL'
-${KIOSK_BEGIN}
-EOL"
-    printf "%b" "$content" | sudo tee -a "$file" > /dev/null
-    sudo bash -c "cat >> '$file' <<'EOL'
-${KIOSK_END}
-EOL"
+    {
+      echo "$KIOSK_BEGIN"
+      printf "%b\n" "$content"
+      echo "$KIOSK_END"
+    } | sudo tee -a "$file" > /dev/null
   else
     {
       echo "$KIOSK_BEGIN"
-      printf "%b" "$content"
+      printf "%b\n" "$content"
       echo "$KIOSK_END"
     } >> "$file"
   fi
-
 }
 
 # =========================
