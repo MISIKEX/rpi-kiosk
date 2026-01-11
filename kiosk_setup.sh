@@ -28,6 +28,15 @@ fi
 CURRENT_USER=$(whoami)
 HOME_DIR=$(eval echo "~$CURRENT_USER")
 
+# Boot konfigurációs fájl útvonalának meghatározása (distro/kiadás függő)
+if [ -f "/boot/firmware/config.txt" ]; then
+    BOOT_CONFIG="/boot/firmware/config.txt"
+    BOOT_CMDLINE="/boot/firmware/cmdline.txt"
+else
+    BOOT_CONFIG="/boot/config.txt"
+    BOOT_CMDLINE="/boot/cmdline.txt"
+fi
+
 # Függvény igen/nem kérdéshez alapértelmezett értékkel
 ask_user() {
     local prompt="$1"
@@ -74,6 +83,13 @@ if ask_user "Szeretnéd telepíteni a Wayland és labwc csomagokat?" "y"; then
     echo -e "\e[90mWayland csomagok telepítése folyamatban, kérlek várj...\e[0m"
     sudo apt install --no-install-recommends -y labwc wlr-randr seatd > /dev/null 2>&1 &
     spinner $! "Wayland csomagok telepítése..."
+    # seatd engedélyezése (különben labwc input/DRM gond lehet)
+    sudo systemctl enable --now seatd > /dev/null 2>&1 || true
+    # Ha létezik seat csoport, add hozzá a usert (distrofüggő)
+    if getent group seat > /dev/null 2>&1; then
+    sudo usermod -aG seat "$CURRENT_USER"
+    echo -e "\e[33mA '$CURRENT_USER' hozzá lett adva a 'seat' csoporthoz. A változás reboot után lép életbe.\e[0m"
+    fi
 fi
 
 # --- Intelligens Chromium telepítés + autostart rész ---
@@ -149,6 +165,7 @@ if ask_user "Szeretnél Chromium autostart scriptet létrehozni labwc-hez?" "y";
         NETWORK_WAIT="  # Wait for network connectivity (max ${MAX_WAIT}s)
   for i in \$(seq 1 $MAX_WAIT); do
     if ping -c 1 -W 2 $PING_HOST > /dev/null 2>&1; then
+      sleep 2
       break
     fi
     sleep 1
@@ -189,11 +206,11 @@ if ask_user "Szeretnél Chromium autostart scriptet létrehozni labwc-hez?" "y";
 # Chromium indítása kiosk módban (hálózati várakozással)
 (
 $NETWORK_WAIT
-    $CHROMIUM_BIN ${INCOGNITO_FLAG}--autoplay-policy=no-user-gesture-required --kiosk $USER_URL
+    $CHROMIUM_BIN ${INCOGNITO_FLAG}--autoplay-policy=no-user-gesture-required --enable-features=UseOzonePlatform --ozone-platform=wayland --kiosk "$USER_URL"
 ) &
 EOL
         else
-            echo "$CHROMIUM_BIN ${INCOGNITO_FLAG}--autoplay-policy=no-user-gesture-required --kiosk $USER_URL &" >> "$LABWC_AUTOSTART_FILE"
+            echo "$CHROMIUM_BIN ${INCOGNITO_FLAG}--autoplay-policy=no-user-gesture-required --enable-features=UseOzonePlatform --ozone-platform=wayland --kiosk \"$USER_URL\" &" >> "$LABWC_AUTOSTART_FILE"
         fi
 
         echo -e "\e[32m✔\e[0m A labwc autostart script létrejött vagy frissült at $LABWC_AUTOSTART_FILE."
@@ -225,7 +242,7 @@ if ask_user "Szeretnéd elrejteni az egérkurzort kiosk módban?" "y"; then
             echo -e "\e[90mHideCursor billentyűparancs hozzáadása a meglévő rc.xml-hez...\e[0m"
             # Beszúrás a </keyboard> záró tag elé
             if grep -q "</keyboard>" "$RC_XML"; then
-                sudo sed -i 's|</keyboard>|  <keybind key="W-h">\n    <action name="HideCursor"/>\n    <action name="WarpCursor" to="output" x="1" y="1"/>\n  </keybind>\n</keyboard>|' "$RC_XML"
+                sed -i 's|</keyboard>|  <keybind key="W-h">\n    <action name="HideCursor"/>\n    <action name="WarpCursor" to="output" x="1" y="1"/>\n  </keybind>\n</keyboard>|' "$RC_XML"
             else
                 echo -e "\e[33mNem található </keyboard> tag az rc.xml-ben. Kérlek add hozzá kézzel a HideCursor billentyűparancsot.\e[0m"
             fi
@@ -294,7 +311,7 @@ if ask_user "Szeretnéd telepíteni a splash képernyőt?" "y"; then
         spinner $! "initramfs frissítése..."
     fi
 
-    CONFIG_TXT="/boot/firmware/config.txt"
+    CONFIG_TXT="$BOOT_CONFIG"
     if [ -f "$CONFIG_TXT" ]; then
         if ! grep -q "disable_splash" "$CONFIG_TXT"; then
             echo -e "\e[90mAdding disable_splash=1 to $CONFIG_TXT...\e[0m"
@@ -306,7 +323,7 @@ if ask_user "Szeretnéd telepíteni a splash képernyőt?" "y"; then
         echo -e "\e[33m$CONFIG_TXT not found — skipping config.txt modification.\e[0m"
     fi
 
-    CMDLINE_TXT="/boot/firmware/cmdline.txt"
+    CMDLINE_TXT="$BOOT_CMDLINE"
     if [ -f "$CMDLINE_TXT" ]; then
         if ! grep -q "splash" "$CMDLINE_TXT"; then
             echo -e "\e[90mAdding quiet splash plymouth.ignore-serial-consoles to $CMDLINE_TXT...\e[0m"
@@ -377,7 +394,7 @@ if ask_user "Do you want to set the screen resolution in cmdline.txt and the lab
     done
 
     # Kiválasztott felbontás hozzáadása a cmdline.txt-hez
-    CMDLINE_FILE="/boot/firmware/cmdline.txt"
+    CMDLINE_FILE="$BOOT_CMDLINE"
     if [ -f "$CMDLINE_FILE" ]; then
         if ! grep -q "video=" "$CMDLINE_FILE"; then
             echo -e "\e[90mAdding video=HDMI-A-1:$RESOLUTION to $CMDLINE_FILE...\e[0m"
@@ -434,7 +451,7 @@ fi
 # Hang kimenet kényszerítése HDMI-re?
 echo
 if ask_user "Do you want to force audio output to HDMI?" "y"; then
-    CONFIG_TXT="/boot/firmware/config.txt"
+    CONFIG_TXT="$BOOT_CONFIG"
     if [ -f "$CONFIG_TXT" ]; then
         # Check if dtparam=audio exists (uncommented)
         if grep -q "^dtparam=audio=" "$CONFIG_TXT"; then
@@ -467,7 +484,7 @@ fi
 echo
 if ask_user "Do you want to enable TV remote control via HDMI-CEC?" "n"; then
     echo -e "\e[90mTelepítés CEC utilities, please wait...\e[0m"
-    sudo apt-get install -y ir-keytable > /dev/null 2>&1 &
+    sudo apt-get install -y ir-keytable v4l-utils > /dev/null 2>&1 &
     spinner $! "Telepítés CEC utilities..."
 
     # Egyedi CEC billentyűtérkép könyvtár létrehozása
@@ -494,6 +511,53 @@ EOL
 
     echo -e "\e[32m✔\e[0m Custom CEC keymap created!"
 
+    echo -e "\e[90mCreating CEC wrapper script...\e[0m"
+    sudo bash -c "cat > /usr/local/bin/cec-setup.sh" << 'EOL'
+#!/bin/bash
+set -e
+
+# 1) CEC device detektálás: első létező /dev/cec*
+CEC_DEV=""
+for dev in /dev/cec*; do
+  if [ -e "$dev" ]; then
+    CEC_DEV="$dev"
+    break
+  fi
+done
+
+if [ -z "$CEC_DEV" ]; then
+  echo "ERROR: No /dev/cec* device found."
+  exit 1
+fi
+
+# 2) rc device detektálás: első ir-keytable által listázott eszköz (pl. rc0, rc1)
+RC_DEV=""
+if command -v ir-keytable >/dev/null 2>&1; then
+  # Példa kimenet: "Found /sys/class/rc/rc0/ ..."
+  RC_DEV=$(ir-keytable -l 2>/dev/null | awk '/Found .*\/rc[0-9]+\// { match($0, /\/rc[0-9]+\//); print substr($0, RSTART+1, RLENGTH-2); exit }' || true)
+fi
+
+if [ -z "$RC_DEV" ]; then
+  # Fallback: próbáljuk rc0-val
+  RC_DEV="rc0"
+fi
+
+# 3) CEC beállítások
+/usr/bin/cec-ctl -d "$CEC_DEV" --playback
+sleep 2
+/usr/bin/cec-ctl -d "$CEC_DEV" --active-source phys-addr=1.0.0.0
+sleep 1
+
+# 4) Keymap betöltése
+/usr/bin/ir-keytable -c -s "$RC_DEV" -w /etc/rc_keymaps/custom-cec.toml
+
+exit 0
+EOL
+
+    sudo chmod +x /usr/local/bin/cec-setup.sh
+    echo -e "\e[32m✔\e[0m CEC wrapper script created at /usr/local/bin/cec-setup.sh"
+
+
     # systemd szolgáltatás létrehozása CEC beállításhoz
     echo -e "\e[90mCreating CEC setup service...\e[0m"
     sudo bash -c "cat > /etc/systemd/system/cec-setup.service" << 'EOL'
@@ -504,11 +568,7 @@ Before=graphical.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/cec-ctl -d /dev/cec1 --playback
-ExecStart=/bin/sleep 2
-ExecStart=/usr/bin/cec-ctl -d /dev/cec1 --active-source phys-addr=1.0.0.0
-ExecStart=/bin/sleep 1
-ExecStart=/usr/bin/ir-keytable -c -s rc0 -w /etc/rc_keymaps/custom-cec.toml
+ExecStart=/usr/local/bin/cec-setup.sh
 RemainAfterExit=yes
 
 [Install]
