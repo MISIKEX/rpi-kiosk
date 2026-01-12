@@ -780,7 +780,7 @@ spinner $! "APT gyorsítótárak takarítása..."
 # =========================
 echo -e "\e[32m✔\e[0m \e[32mA beállítás sikeresen befejeződött!\e[0m"
 echo
-if ask_user "Szeretnéd most újraindítani a rendszert?" "n"; then
+if ask_user "Szeretnéd most újraindítani a rendszert?" "y"; then
   echo -e "\e[90mRendszer újraindítása...\e[0m"
   sudo reboot
 else
